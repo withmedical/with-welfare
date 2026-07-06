@@ -58,19 +58,26 @@ const seed={
 };
 
 let state=load();
-migrate();
-// 창을 닫아도 로그인 상태가 완벽히 보존되도록 로컬스토리지에서 로그인 세션 추출
+migrate(); // 데이터 유실 버그가 수정된 마이그레이션 함수 실행
 let session=JSON.parse(localStorage.getItem("with_session_v5")||"null");
 let page="home", loginTab="user", adminTab="adminDashboard", calDate=new Date();
 
 function load(){const s=localStorage.getItem("with_welfare_v5"); if(s) return JSON.parse(s); localStorage.setItem("with_welfare_v5",JSON.stringify(seed)); return JSON.parse(JSON.stringify(seed));}
 function save(){localStorage.setItem("with_welfare_v5",JSON.stringify(state));}
+
+// [버그 수정 고정] 창을 닫거나 새로고침 시 기존 저장된 유저/예약 데이터를 초기화하지 않도록 완전 방어 조치
 function migrate(){
   let changed=false;
   if(!state.admins){state.admins=seed.admins; changed=true;}
+  if(!state.users){state.users=seed.users; changed=true;}
+  if(!state.reservations){state.reservations=[]; changed=true;}
+  if(!state.condolences){state.condolences=[]; changed=true;}
+  if(!state.eventApplications){state.eventApplications=[]; changed=true;}
+  if(!state.vacationSupport){state.vacationSupport=[]; changed=true;}
   if(!state.usePolicies){state.usePolicies=seed.usePolicies; changed=true;}
   if(!state.condolenceTypes){state.condolenceTypes=seed.condolenceTypes; changed=true;}
   if(!state.mailOutbox){state.mailOutbox=[]; changed=true;}
+  if(!state.settings){state.settings=seed.settings; changed=true;}
   if(!state.settings.condolenceEmail){state.settings.condolenceEmail="welfare@withmedical.co.kr"; changed=true;}
   if(!state.settings.vacationEmail){state.settings.vacationEmail="vacation@withmedical.co.kr"; changed=true;}
   if(!state.settings.logoUrl){state.settings.logoUrl="logo.gif"; changed=true;}
@@ -89,11 +96,19 @@ function migrate(){
     };
     changed=true;
   }
-  state.events=(state.events||seed.events).map(e=>({id:e.id||uid(), title:e.title, date:e.date, limit:e.limit||0, memo:e.memo||"", isOpen:e.isOpen!==false}));
-  state.discounts=(state.discounts||seed.discounts).map(d=>({id:d.id||uid(), category:d.category||"", title:d.title||"", rate:d.rate||"", method:d.method||"", link:d.link||""}));
-  state.notices=(state.notices||seed.notices).map(n=>({id:n.id||uid(), title:n.title||"", important:!!n.important, body:n.body||"", views:n.views||0}));
+  
+  // 기존 수성 배열 데이터 보존 (seed로 무조건 덮어쓰던 버그 해결)
+  if(!state.events) { state.events = seed.events; changed=true; }
+  if(!state.discounts) { state.discounts = seed.discounts; changed=true; }
+  if(!state.notices) { state.notices = seed.notices; changed=true; }
+
+  state.events=state.events.map(e=>({id:e.id||uid(), title:e.title, date:e.date, limit:e.limit||0, memo:e.memo||"", isOpen:e.isOpen!==false}));
+  state.discounts=state.discounts.map(d=>({id:d.id||uid(), category:d.category||"", title:d.title||"", rate:d.rate||"", method:d.method||"", link:d.link||""}));
+  state.notices=state.notices.map(n=>({id:n.id||uid(), title:n.title||"", important:!!n.important, body:n.body||"", views:n.views||0}));
+  
   if(changed) save();
 }
+
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
 function money(n){return Number(n||0).toLocaleString()+"원";}
 function toast(msg){const t=document.createElement("div");t.className="toast";t.innerText=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
@@ -106,7 +121,6 @@ function loginAdmin(e){e.preventDefault();const f=new FormData(e.target);const a
 function signup(e){e.preventDefault();const f=new FormData(e.target);const phone=f.get("phone"), empNo=f.get("empNo");if(state.users.some(u=>u.phone===phone||u.empNo===empNo))return toast("이미 등록된 전화번호 또는 사원번호입니다.");state.users.push({id:uid(),name:f.get("name"),empNo,birth:f.get("birth"),phone,password:f.get("password"),role:"user",dept:f.get("dept")||"",status:"가입대기",createdAt:new Date().toLocaleString()});save();toast("회원가입 신청 완료. 관리자 승인 후 로그인 가능합니다.");loginTab="user";render();}
 function loginView(){app.innerHTML=`<div class="loginbox panel"><div class="brand"><div class="logo">W</div><div><b>WITH Welfare Mall</b><small>회원 승인형 복지몰</small></div></div><h1>복지몰 로그인</h1><div class="tabs"><button class="${loginTab==='user'?'active':''}" onclick="loginTab='user';render()">직원 로그인</button><button class="${loginTab==='signup'?'active':''}" onclick="loginTab='signup';render()">회원가입</button><button class="${loginTab==='admin'?'active':''}" onclick="loginTab='admin';render()">관리자</button></div>${loginTab==='user'?`<form class="form" onsubmit="loginUser(event)"><label class="wide">이름<input name="name" required></label><label class="wide">전화번호<input name="phone" placeholder="010-0000-0000" required></label><label class="wide">비밀번호<input type="password" name="password" required></label><button class="wide">직원 로그인</button></form>`:""}${loginTab==='signup'?`<form class="form" onsubmit="signup(event)"><label>이름<input name="name" required></label><label>사원번호<input name="empNo" required></label><label>생년월일<input type="date" name="birth" required></label><label>전화번호<input name="phone" required></label><label>부서<input name="dept"></label><label>비밀번호<input type="password" name="password" required></label><button class="wide">회원가입 신청</button></form>`:""}${loginTab==='admin'?`<form class="form" onsubmit="loginAdmin(event)"><label class="wide">관리자 ID<input name="id" required></label><label class="wide">비밀번호<input type="password" name="password" required></label><button class="wide">관리자 로그인</button></form>`:""}</div>`;}
 function layout(content){const u=user();return `<div class="top"><div class="topin"><div class="brand"><div class="logo">${state.settings.logoUrl?`<img src="${state.settings.logoUrl}">`:`W`}</div><div><b>WITH Welfare Mall</b><small>${u.name} · ${u.role==="admin"?"관리자":"임직원"}</small></div></div><div class="nav">${navItems().map(item=>`<button class="${page===item.key?'active':''}" onclick="setPage('${item.key}')">${item.name}</button>`).join("")}${u.role==="admin"?`<button class="${page==='admin'?'active':''}" onclick="setPage('admin')">관리자</button>`:""}<button class="gray" onclick="logout()">로그아웃</button></div></div></div><div class="wrap">${content}</div><div class="footer">WITH Welfare Mall · 제주 사계펜션 복지몰</div>`;}
-
 
 function navItems(){
   const base=[{key:"home",name:"홈",enabled:true}];
@@ -139,7 +153,6 @@ function validateFile(input){
   if(file.size>MAX_FILE_SIZE) return {ok:false, msg:"첨부파일은 500KB 이하만 가능합니다."};
   return {ok:true, name:file.name};
 }
-
 
 function dashboardCounts(){
   const u=user();
