@@ -5,8 +5,8 @@ const today=new Date().toISOString().slice(0,10);[cite: 1]
 const API_KEY="sb_publishable_trTC1dyramnwWtd4XV9eqw_zRWEAY47";[cite: 1]
 const SUPABASE_URL="https://eqromjnhqkecmpkherjb.supabase.co";[cite: 1]
 
-// 2. Supabase 클라이언트 초기화 객체 생성 (연동 필수 추가)
-const _supabase = supabase.createClient(SUPABASE_URL, API_KEY);
+// 중요: 전역 변수로 선언만 해두고, 라이브러리가 로드된 후에 초기화합니다.
+let _supabase = null;
 
 const MAX_FILE_SIZE=500*1024;[cite: 1]
 const ALLOWED_FILES=["application/pdf","image/png","image/jpeg","image/jpg","image/gif","image/webp"];[cite: 1]
@@ -659,9 +659,21 @@ function exportCSV(){const rows=[["구분","신청자","부서","내용","일자
 function resetData(){if(!confirm("데모 데이터를 초기화할까요?"))return;localStorage.removeItem("with_welfare_v5");localStorage.removeItem("with_session_v5");state=load();session=null;toast("초기화되었습니다.");render();}[cite: 1]
 function render(){if(!session)return loginView();if(!user()){logout();return;}if(!ensureEnabledPage(page)){page="home";}if(page==="home")app.innerHTML=home();if(page==="stay")app.innerHTML=stay();if(page==="family")app.innerHTML=family();if(page==="event")app.innerHTML=eventPage();if(page==="discount")app.innerHTML=discount();if(page==="vacation")app.innerHTML=vacation();if(page==="notice")app.innerHTML=notice();if(page==="admin")app.innerHTML=admin();if(page==="mypage")app.innerHTML=mypage();}[cite: 1]
 
-// CDN 외부 라이브러리 및 DOM 생성이 안전하게 완료된 시점에 이벤트를 감지하여 렌더링을 지연 실행합니다.
+// 실행 진입점: 브라우저가 라이브러리와 DOM을 확실히 처리했을 때 Supabase 연결 및 렌더링을 일괄 처리합니다.
+function startApp() {
+  try {
+    // CDN 로드가 완료된 후에만 supabase를 찾을 수 있습니다.
+    _supabase = supabase.createClient(SUPABASE_URL, API_KEY);
+    render();[cite: 1]
+  } catch (e) {
+    console.error("Supabase 초기화 실패:", e);
+    // 혹시 모를 에러 상황 시에도 기본 로컬 화면은 열리도록 render 보장
+    render();[cite: 1]
+  }
+}
+
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", render);
+  document.addEventListener("DOMContentLoaded", startApp);
 } else {
-  render();
+  startApp();
 }
