@@ -1,6 +1,6 @@
 // Supabase 설정 및 초기화
 const SUPABASE_URL = "https://eqromjnhqkecmpkherjb.supabase.co";
-const SUPABASE_KEY = "sb_publishable_trTC1dyramnWwtd4XV9eqw_zRWEA"; // image_a5b626.png 기반 Key 입력
+const SUPABASE_KEY = "sb_publishable_trTC1dyramnwWtd4XV9eqw_zRWEAY47"; // 전달받은 API Key 적용
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const app = document.getElementById("app");
