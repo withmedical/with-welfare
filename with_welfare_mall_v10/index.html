@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>WITH Welfare Mall V10</title>
   <link rel="stylesheet" href="style.css" />
-  <!-- Supabase CDN 스크립트 추가 -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Supabase 라이브러리가 먼저 완벽히 로드되도록 defer 속성 추가 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <!-- app.js가 Supabase 로드 완료 후에 안정적으로 실행되도록 defer 속성 추가 및 head 이동 -->
+  <script src="app.js" defer></script>
 </head>
 <body>
   <div id="app"></div>
-  <script src="app.js"></script>
 </body>
 </html>
