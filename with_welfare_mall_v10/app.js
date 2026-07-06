@@ -11,14 +11,14 @@ const _supabase = supabase.createClient(SUPABASE_URL, API_KEY);
 const MAX_FILE_SIZE=500*1024;[cite: 1]
 const ALLOWED_FILES=["application/pdf","image/png","image/jpeg","image/jpg","image/gif","image/webp"];[cite: 1]
 
-const seed={[cite: 1]
+const seed = {[cite: 1]
   admins:[[cite: 1]
     {id:"a1", name:"김경진", role:"admin", loginId:"with1905", password:"withm*1905", dept:"관리자"}[cite: 1]
   ],[cite: 1]
   users:[[cite: 1]
     {id:"u1", name:"홍길동", empNo:"2026001", birth:"1990-01-01", phone:"010-1111-2222", password:"1234", role:"user", dept:"개발팀", status:"가입승인", createdAt:"2026-07-03"}[cite: 1]
   ],[cite: 1]
-  settings:{[cite: 1]
+  settings: {[cite: 1]
     bankName:"국민은행",[cite: 1]
     bankAccount:"123456-01-789012",[cite: 1]
     bankHolder:"주식회사 위드메디컬",[cite: 1]
@@ -658,4 +658,10 @@ function stats(){return`<div class="grid4"><div class="card"><span class="muted"
 function exportCSV(){const rows=[["구분","신청자","부서","내용","일자","박수","금액","상태"]];state.reservations.forEach(r=>rows.push(["숙소예약",r.userName,r.dept,r.roomName,`${r.checkin}~${r.checkout}`,r.nights,r.amount||0,r.status]));state.condolences.forEach(r=>rows.push(["경조사",r.userName,r.dept,r.type,r.date,"",0,r.status]));state.vacationSupport.forEach(r=>rows.push(["휴가지원사업",r.userName,r.dept,r.type,r.date,"",0,r.status]));const csv="\ufeff"+rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="welfare_export.csv";a.click();}[cite: 1]
 function resetData(){if(!confirm("데모 데이터를 초기화할까요?"))return;localStorage.removeItem("with_welfare_v5");localStorage.removeItem("with_session_v5");state=load();session=null;toast("초기화되었습니다.");render();}[cite: 1]
 function render(){if(!session)return loginView();if(!user()){logout();return;}if(!ensureEnabledPage(page)){page="home";}if(page==="home")app.innerHTML=home();if(page==="stay")app.innerHTML=stay();if(page==="family")app.innerHTML=family();if(page==="event")app.innerHTML=eventPage();if(page==="discount")app.innerHTML=discount();if(page==="vacation")app.innerHTML=vacation();if(page==="notice")app.innerHTML=notice();if(page==="admin")app.innerHTML=admin();if(page==="mypage")app.innerHTML=mypage();}[cite: 1]
-render();[cite: 1]
+
+// CDN 외부 라이브러리 및 DOM 생성이 안전하게 완료된 시점에 이벤트를 감지하여 렌더링을 지연 실행합니다.
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", render);
+} else {
+  render();
+}
